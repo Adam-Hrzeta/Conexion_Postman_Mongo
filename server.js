@@ -1,45 +1,47 @@
-require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
-
 const app = express();
+const port = 3000;
+
+// Middleware para parsear JSON
 app.use(express.json());
-app.use(cors());
 
-const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI;
+// Conectar a MongoDB Atlas (sin opciones obsoletas)
+mongoose.connect('mongodb+srv://adamhrzeta:Espinosaurio22@clusterpractica01.c8ced.mongodb.net/?retryWrites=true&w=majority&appName=ClusterPractica01')
+    .then(() => {
+        console.log('Conectado a MongoDB Atlas');
+    })
+    .catch((err) => {
+        console.error('Error conectando a MongoDB Atlas:', err);
+    });
 
-mongoose.connect(MONGO_URI)
-    .then(() => console.log('Conectado a MongoDB Atlas'))
-    .catch(err => console.error('Error al conectar:', err));
+// Definir un modelo de ejemplo
+const Schema = mongoose.Schema;
+const ExampleSchema = new Schema({ name: String });
+const ExampleModel = mongoose.model('Example', ExampleSchema);
 
-const EjemploSchema = new mongoose.Schema({
-    titulo: String,
-    descripcion: String,
-    fecha: { type: Date, default: Date.now }
-});
-const Ejemplo = mongoose.model('Ejemplo', EjemploSchema);
-
-app.get('/ejemplos', async (req, res) => {
+// Endpoint para obtener datos
+app.get('/examples', async (req, res) => {
     try {
-        const ejemplos = await Ejemplo.find();
-        res.json(ejemplos); 
-    } catch (error) {
-        res.status(500).json({ mensaje: 'Error al obtener los ejemplos', error });
+        const examples = await ExampleModel.find();
+        res.json(examples);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
-// Ruta POST para agregar un nuevo ejemplo
-app.post('/ejemplos', async (req, res) => {
+// Endpoint para agregar datos
+app.post('/examples', async (req, res) => {
     try {
-        const nuevoEjemplo = new Ejemplo(req.body);
-        await nuevoEjemplo.save();
-        res.json({ mensaje: 'Ejemplo agregado', ejemplo: nuevoEjemplo });
-    } catch (error) {
-        res.status(500).json({ mensaje: 'Error al agregar el ejemplo', error });
+        const newExample = new ExampleModel({ name: req.body.name });
+        await newExample.save();
+        res.status(201).json(newExample);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
 // Iniciar el servidor
-app.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`));
+app.listen(port, () => {
+    console.log(`Servidor corriendo en http://localhost:${port}`);
+});
